@@ -204,8 +204,8 @@ export default function AdminDashboard() {
   if (isCreating || editingArticle) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-10 bg-gray-50 min-h-screen">
-        <ArticleEditor 
-          article={editingArticle?.id === 0 ? null : editingArticle} // if id 0, it's from parser (new)
+        <ArticleEditor
+          article={editingArticle?.id === -1 ? null : editingArticle} // if id -1, it's from parser (new)
           onSaved={() => { setEditingArticle(null); setIsCreating(false); }}
           onCancel={() => { setEditingArticle(null); setIsCreating(false); }}
         />
