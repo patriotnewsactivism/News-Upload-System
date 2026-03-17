@@ -322,47 +322,117 @@ export default function AdminDashboard() {
 
         <TabsContent value="upload">
           <div className="bg-white rounded-xl shadow-md border border-gray-200 p-8 max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UploadCloud className="w-8 h-8" />
-              </div>
-              <h2 className="text-2xl font-display font-black text-navy mb-2">Automated Article Generation</h2>
-              <p className="text-muted-foreground text-sm">Paste raw HTML, raw text, or evidence notes. The system will parse it, fix formatting, assign tags, and generate a draft ready for your review.</p>
-            </div>
+            {!parsedDraft ? (
+              <>
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <UploadCloud className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-2xl font-display font-black text-navy mb-2">Automated Article Generation</h2>
+                  <p className="text-muted-foreground text-sm">Paste raw HTML, raw text, or evidence notes. The system will parse it, fix formatting, assign tags, and generate a draft ready for your review.</p>
+                </div>
 
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Source Material Type</label>
-                <select 
-                  value={contentType} 
-                  onChange={e => setContentType(e.target.value as UploadContentRequestContentType)}
-                  className="w-full h-12 px-4 rounded-md border border-gray-300 bg-gray-50 text-navy font-semibold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                >
-                  <option value={UploadContentRequestContentType.html}>Raw HTML Code</option>
-                  <option value={UploadContentRequestContentType.text}>Plain Text Article</option>
-                  <option value={UploadContentRequestContentType.evidence}>Evidence / Field Notes</option>
-                </select>
-              </div>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Source Material Type</label>
+                    <select
+                      value={contentType}
+                      onChange={e => setContentType(e.target.value as UploadContentRequestContentType)}
+                      className="w-full h-12 px-4 rounded-md border border-gray-300 bg-gray-50 text-navy font-semibold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      <option value={UploadContentRequestContentType.html}>Raw HTML Code</option>
+                      <option value={UploadContentRequestContentType.text}>Plain Text Article</option>
+                      <option value={UploadContentRequestContentType.evidence}>Evidence / Field Notes</option>
+                    </select>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Raw Content</label>
-                <Textarea 
-                  value={rawContent} 
-                  onChange={e => setRawContent(e.target.value)} 
-                  rows={12} 
-                  className="font-mono text-sm bg-gray-900 text-green-400 p-4 rounded-lg focus-visible:ring-primary border-0" 
-                  placeholder="Paste your source material here..." 
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Raw Content</label>
+                    <Textarea
+                      value={rawContent}
+                      onChange={e => setRawContent(e.target.value)}
+                      rows={12}
+                      className="font-mono text-sm bg-gray-900 text-green-400 p-4 rounded-lg focus-visible:ring-primary border-0"
+                      placeholder="Paste your source material here..."
+                    />
+                  </div>
 
-              <Button 
-                onClick={handleParseUpload} 
-                disabled={!rawContent || uploadMut.isPending} 
-                className="w-full h-14 bg-primary hover:bg-red-700 text-white font-bold tracking-widest text-lg shadow-lg transition-transform active:scale-[0.98]"
-              >
-                {uploadMut.isPending ? "ANALYZING & PARSING..." : "GENERATE ARTICLE DRAFT"}
-              </Button>
-            </div>
+                  <Button
+                    onClick={handleParseUpload}
+                    disabled={!rawContent || uploadMut.isPending}
+                    className="w-full h-14 bg-primary hover:bg-red-700 text-white font-bold tracking-widest text-lg shadow-lg transition-transform active:scale-[0.98]"
+                  >
+                    {uploadMut.isPending ? "ANALYZING & PARSING..." : "GENERATE ARTICLE DRAFT"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-2xl font-display font-black text-navy mb-2">Article Ready to Publish</h2>
+                  <p className="text-muted-foreground text-sm">Review the generated metadata below, then publish immediately or open the editor for fine-tuning.</p>
+                </div>
+
+                <div className="space-y-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Title</label>
+                    <p className="text-lg font-bold text-navy">{parsedDraft.suggestedTitle}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Summary</label>
+                    <p className="text-sm text-gray-700">{parsedDraft.suggestedSummary}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Category</label>
+                      <Badge className="bg-blue-100 text-blue-800">{parsedDraft.suggestedCategory}</Badge>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Read Time</label>
+                      <p className="font-semibold text-navy">~{Math.max(1, Math.round(parsedDraft.processedContent.split(/\s+/).length / 200))} min</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Tags</label>
+                    <div className="flex flex-wrap gap-2">
+                      {parsedDraft.suggestedTags.map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="bg-gray-100 text-gray-800">{tag}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setParsedDraft(null)}
+                    className="flex-1 font-bold tracking-widest"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" /> BACK
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleOpenInEditor}
+                    className="flex-1 font-bold tracking-widest"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" /> OPEN IN EDITOR
+                  </Button>
+                  <Button
+                    onClick={handlePublishNow}
+                    disabled={createMut.isPending}
+                    className="flex-1 bg-primary hover:bg-red-700 font-bold tracking-widest"
+                  >
+                    {createMut.isPending ? "PUBLISHING..." : "PUBLISH NOW →"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
