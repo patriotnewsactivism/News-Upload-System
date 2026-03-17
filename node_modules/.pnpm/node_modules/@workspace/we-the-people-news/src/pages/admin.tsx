@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Lock, LogOut, Plus, Edit2, Trash2, CheckCircle, FileText, UploadCloud, Eye } from "lucide-react";
+import { Lock, LogOut, Plus, Edit2, Trash2, CheckCircle, FileText, UploadCloud, Eye, ArrowLeft } from "lucide-react";
 import { useArticles, useCreateArticleMutation, useUpdateArticleMutation, useDeleteArticleMutation, useUploadArticleContentMutation } from "@/hooks/use-articles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import type { Article } from "@workspace/api-client-react";
+import type { Article, ParsedArticleResponse } from "@workspace/api-client-react";
 import { UploadContentRequestContentType } from "@workspace/api-client-react";
+import { format } from "date-fns";
 
 function ArticleEditor({ article, onSaved, onCancel }: { article?: Article | null, onSaved: () => void, onCancel: () => void }) {
   const { toast } = useToast();
@@ -20,7 +21,7 @@ function ArticleEditor({ article, onSaved, onCancel }: { article?: Article | nul
     title: article?.title || "",
     summary: article?.summary || "",
     content: article?.content || "",
-    category: article?.category || "Politics",
+    category: article?.category || "Public Officials",
     tags: article?.tags?.join(", ") || "",
     imageUrl: article?.imageUrl || "",
     published: article ? article.published : true,
@@ -83,17 +84,16 @@ function ArticleEditor({ article, onSaved, onCancel }: { article?: Article | nul
         <div className="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-200">
           <div>
             <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Category</label>
-            <select 
-              value={formData.category} 
+            <select
+              value={formData.category}
               onChange={e => setFormData({...formData, category: e.target.value})}
               className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary"
             >
-              <option value="Politics">Politics</option>
-              <option value="Government">Government</option>
-              <option value="Constitution">Constitution</option>
-              <option value="Crime">Crime</option>
-              <option value="Economy">Economy</option>
-              <option value="World">World</option>
+              <option value="Corrupt Law Enforcement">Corrupt Law Enforcement</option>
+              <option value="Public Officials">Public Officials</option>
+              <option value="Court Cases - Open">Court Cases - Open</option>
+              <option value="Court Cases - Closed">Court Cases - Closed</option>
+              <option value="Activism">Activism</option>
             </select>
           </div>
           <div>
@@ -127,7 +127,7 @@ function ArticleEditor({ article, onSaved, onCancel }: { article?: Article | nul
 export default function AdminDashboard() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  
+
   const [activeTab, setActiveTab] = useState("list");
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -135,7 +135,9 @@ export default function AdminDashboard() {
   // Upload State
   const [rawContent, setRawContent] = useState("");
   const [contentType, setContentType] = useState<UploadContentRequestContentType>(UploadContentRequestContentType.text);
+  const [parsedDraft, setParsedDraft] = useState<ParsedArticleResponse | null>(null);
   const uploadMut = useUploadArticleContentMutation();
+  const createMut = useCreateArticleMutation();
 
   const { data, isLoading } = useArticles({ limit: 100 });
   const deleteMut = useDeleteArticleMutation();

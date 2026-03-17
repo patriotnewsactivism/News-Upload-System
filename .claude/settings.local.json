@@ -9,7 +9,8 @@
       "Bash(taskkill /F /IM \"git.exe\")",
       "Bash(git -C C:/News-Upload-System checkout upgrade)",
       "Bash(git -C C:/News-Upload-System add artifacts/we-the-people-news/src/pages/admin.tsx)",
-      "Bash(git -C C:/News-Upload-System commit -m \"Implement upload → preview → publish workflow\")"
+      "Bash(git -C C:/News-Upload-System commit -m \"Implement upload → preview → publish workflow\")",
+      "Bash(node -c artifacts/api-server/src/routes/articles.ts)"
     ]
   }
 }
