@@ -15,7 +15,9 @@
       "Bash(export DATABASE_URL=\"postgresql://neondb_owner:npg_C5O1kmbZuGNz@ep-small-bonus-a8cyikm3-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require\")",
       "Bash(grep -E \"^\\\\s?[AM].*\\\\.\\(ts|tsx|yaml|md\\)$\")",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(curl -s -X POST http://localhost:3000/api/articles -H \"Content-Type: application/json\" -d '{:*)",
+      "Bash(curl -s -X POST http://localhost:3000/api/articles/upload -H \"Content-Type: application/json\" -d '{:*)"
     ]
   }
 }
