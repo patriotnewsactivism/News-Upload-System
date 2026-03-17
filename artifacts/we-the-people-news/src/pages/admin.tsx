@@ -171,28 +171,61 @@ export default function AdminDashboard() {
     if (!rawContent) return;
     uploadMut.mutate({ data: { rawContent, contentType } }, {
       onSuccess: (res) => {
-        toast({ title: "Parsing Complete", description: "Content converted to article format." });
-        setEditingArticle({
-          id: 0, // temp
-          title: res.suggestedTitle,
-          summary: res.suggestedSummary,
-          content: res.processedContent,
-          category: res.suggestedCategory,
-          tags: res.suggestedTags,
-          slug: "",
-          author: "Don Matthews",
-          readTimeMinutes: 5,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          published: false,
-          featured: false,
-          metaTitle: res.suggestedMetaTitle,
-          metaDescription: res.suggestedMetaDescription
-        });
-        setIsCreating(true);
-        setActiveTab("list"); // Hide upload UI while editing
+        toast({ title: "Draft Generated", description: "Review and publish your article." });
+        setParsedDraft(res);
       }
     });
+  };
+
+  const handlePublishNow = () => {
+    if (!parsedDraft) return;
+    createMut.mutate({
+      data: {
+        title: parsedDraft.suggestedTitle,
+        summary: parsedDraft.suggestedSummary,
+        content: parsedDraft.processedContent,
+        category: parsedDraft.suggestedCategory,
+        tags: parsedDraft.suggestedTags,
+        metaTitle: parsedDraft.suggestedMetaTitle,
+        metaDescription: parsedDraft.suggestedMetaDescription,
+        published: true,
+      }
+    }, {
+      onSuccess: () => {
+        toast({ title: "Published!", description: "Article is now live." });
+        setParsedDraft(null);
+        setRawContent("");
+      }
+    });
+  };
+
+  const handleOpenInEditor = () => {
+    if (!parsedDraft) return;
+    setEditingArticle({
+      id: -1, // sentinel for new article from parser
+      title: parsedDraft.suggestedTitle,
+      summary: parsedDraft.suggestedSummary,
+      content: parsedDraft.processedContent,
+      category: parsedDraft.suggestedCategory,
+      tags: parsedDraft.suggestedTags,
+      slug: "",
+      author: "Don Matthews",
+      readTimeMinutes: 5,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      published: false,
+      featured: false,
+      metaTitle: parsedDraft.suggestedMetaTitle,
+      metaDescription: parsedDraft.suggestedMetaDescription,
+      imageUrl: null,
+      views: 0,
+      shares: 0,
+      viralScore: 0,
+      publishedAt: null,
+      scheduledFor: null,
+    });
+    setIsCreating(true);
+    setParsedDraft(null);
   };
 
   const handleTogglePublish = (article: Article) => {
