@@ -1,0 +1,1 @@
+{"version":3,"file":"uploadContentRequest.d.ts","sourceRoot":"","sources":["../../../src/generated/types/uploadContentRequest.ts"],"names":[],"mappings":"AAAA;;;;;;GAMG;AACH,OAAO,KAAK,EAAE,+BAA+B,EAAE,MAAM,mCAAmC,CAAC;AAEzF,MAAM,WAAW,oBAAoB;IACnC,qCAAqC;IACrC,UAAU,EAAE,MAAM,CAAC;IACnB,qCAAqC;IACrC,WAAW,EAAE,+BAA+B,CAAC;IAC7C,sCAAsC;IACtC,aAAa,CAAC,EAAE,MAAM,GAAG,IAAI,CAAC;CAC/B"}
