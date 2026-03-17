@@ -1,0 +1,7 @@
+[build]
+  command = "pnpm --filter @workspace/we-the-people-news run build"
+  publish = "artifacts/we-the-people-news/dist/public"
+
+[build.environment]
+  PORT = "5173"
+  BASE_PATH = "/"
