@@ -12,7 +12,10 @@
       "Bash(git -C C:/News-Upload-System commit -m \"Implement upload → preview → publish workflow\")",
       "Bash(node -c artifacts/api-server/src/routes/articles.ts)",
       "Bash(export VITE_ADMIN_PASSWORD=\"test-password-123\")",
-      "Bash(export DATABASE_URL=\"postgresql://neondb_owner:npg_C5O1kmbZuGNz@ep-small-bonus-a8cyikm3-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require\")"
+      "Bash(export DATABASE_URL=\"postgresql://neondb_owner:npg_C5O1kmbZuGNz@ep-small-bonus-a8cyikm3-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require\")",
+      "Bash(grep -E \"^\\\\s?[AM].*\\\\.\\(ts|tsx|yaml|md\\)$\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
