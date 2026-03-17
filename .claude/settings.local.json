@@ -4,7 +4,12 @@
       "Bash(pnpm:*)",
       "Bash(npm list:*)",
       "Bash(npm install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(taskkill /F /IM \"git-credential-manager.exe\")",
+      "Bash(taskkill /F /IM \"git.exe\")",
+      "Bash(git -C C:/News-Upload-System checkout upgrade)",
+      "Bash(git -C C:/News-Upload-System add artifacts/we-the-people-news/src/pages/admin.tsx)",
+      "Bash(git -C C:/News-Upload-System commit -m \"Implement upload → preview → publish workflow\")"
     ]
   }
 }

@@ -1,0 +1,556 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: We The People News API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: articles
+    description: Article operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /articles:
+    get:
+      operationId: listArticles
+      tags: [articles]
+      summary: List all published articles
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of articles
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleListResponse"
+    post:
+      operationId: createArticle
+      tags: [articles]
+      summary: Create a new article (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateArticleRequest"
+      responses:
+        "201":
+          description: Article created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Article"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /articles/{id}:
+    get:
+      operationId: getArticle
+      tags: [articles]
+      summary: Get a single article
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Article found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Article"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateArticle
+      tags: [articles]
+      summary: Update an article (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateArticleRequest"
+      responses:
+        "200":
+          description: Article updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Article"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteArticle
+      tags: [articles]
+      summary: Delete an article (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /articles/upload:
+    post:
+      operationId: uploadArticleContent
+      tags: [articles]
+      summary: Upload HTML or raw text content to auto-generate an article
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadContentRequest"
+      responses:
+        "200":
+          description: Parsed article content preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ParsedArticleResponse"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /articles/bulk-publish:
+    post:
+      operationId: bulkPublishArticles
+      tags: [articles]
+      summary: Publish multiple draft articles (admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkPublishRequest"
+      responses:
+        "200":
+          description: Articles published
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkPublishResponse"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /articles/{id}/analytics:
+    put:
+      operationId: updateArticleAnalytics
+      tags: [articles]
+      summary: Track article views and shares
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyticsUpdate"
+      responses:
+        "200":
+          description: Analytics updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Article"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /newsletter:
+    post:
+      operationId: subscribeNewsletter
+      tags: [articles]
+      summary: Subscribe to newsletter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsletterSubscribeRequest"
+      responses:
+        "200":
+          description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          description: Invalid email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    Article:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        summary:
+          type: string
+        content:
+          type: string
+        author:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        imageUrl:
+          type: string
+          nullable: true
+        featured:
+          type: boolean
+        published:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        scheduledFor:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        metaTitle:
+          type: string
+          nullable: true
+        metaDescription:
+          type: string
+          nullable: true
+        readTimeMinutes:
+          type: integer
+        viralScore:
+          type: integer
+          description: Engagement score (views + shares * 10)
+        views:
+          type: integer
+        shares:
+          type: integer
+      required:
+        - id
+        - title
+        - slug
+        - summary
+        - content
+        - author
+        - category
+        - tags
+        - featured
+        - published
+        - createdAt
+        - updatedAt
+        - readTimeMinutes
+        - viralScore
+        - views
+        - shares
+    ArticleListResponse:
+      type: object
+      properties:
+        articles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Article"
+        total:
+          type: integer
+        limit:
+          type: integer
+        offset:
+          type: integer
+      required:
+        - articles
+        - total
+        - limit
+        - offset
+    CreateArticleRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        imageUrl:
+          type: string
+          nullable: true
+        featured:
+          type: boolean
+        published:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        scheduledFor:
+          type: string
+          format: date-time
+          nullable: true
+          description: Schedule article for automatic publishing at this time
+        metaTitle:
+          type: string
+          nullable: true
+        metaDescription:
+          type: string
+          nullable: true
+      required:
+        - title
+        - summary
+        - content
+        - category
+    UpdateArticleRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        summary:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        imageUrl:
+          type: string
+          nullable: true
+        featured:
+          type: boolean
+        published:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        scheduledFor:
+          type: string
+          format: date-time
+          nullable: true
+          description: Schedule article for automatic publishing at this time
+        metaTitle:
+          type: string
+          nullable: true
+        metaDescription:
+          type: string
+          nullable: true
+    UploadContentRequest:
+      type: object
+      properties:
+        rawContent:
+          type: string
+          description: Raw HTML or plain text content
+        contentType:
+          type: string
+          enum: [html, text, evidence]
+          description: Type of content being uploaded
+        evidenceNotes:
+          type: string
+          nullable: true
+          description: Additional notes about evidence
+      required:
+        - rawContent
+        - contentType
+    ParsedArticleResponse:
+      type: object
+      properties:
+        suggestedTitle:
+          type: string
+        suggestedSummary:
+          type: string
+        processedContent:
+          type: string
+        suggestedCategory:
+          type: string
+        suggestedTags:
+          type: array
+          items:
+            type: string
+        suggestedMetaTitle:
+          type: string
+        suggestedMetaDescription:
+          type: string
+      required:
+        - suggestedTitle
+        - suggestedSummary
+        - processedContent
+        - suggestedCategory
+        - suggestedTags
+        - suggestedMetaTitle
+        - suggestedMetaDescription
+    NewsletterSubscribeRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+          nullable: true
+      required:
+        - email
+    SuccessResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        success:
+          type: boolean
+      required:
+        - message
+        - success
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+    BulkPublishRequest:
+      type: object
+      properties:
+        articleIds:
+          type: array
+          items:
+            type: integer
+          description: Article IDs to publish
+        publishAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Publish all articles at this time (if not already scheduled)
+      required:
+        - articleIds
+    BulkPublishResponse:
+      type: object
+      properties:
+        published:
+          type: integer
+          description: Number of articles published
+        scheduled:
+          type: integer
+          description: Number of articles scheduled
+        failed:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              reason:
+                type: string
+      required:
+        - published
+        - scheduled
+        - failed
+    AnalyticsUpdate:
+      type: object
+      properties:
+        views:
+          type: integer
+          nullable: true
+          description: Add to existing view count
+        shares:
+          type: integer
+          nullable: true
+          description: Add to existing share count
+      required:
+        - views
