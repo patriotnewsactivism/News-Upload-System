@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Lock, LogOut, Plus, Edit2, Trash2, CheckCircle, FileText, UploadCloud, Eye } from "lucide-react";
+import { Lock, LogOut, Plus, Edit2, Trash2, CheckCircle, FileText, UploadCloud, Eye, ArrowLeft } from "lucide-react";
 import { useArticles, useCreateArticleMutation, useUpdateArticleMutation, useDeleteArticleMutation, useUploadArticleContentMutation } from "@/hooks/use-articles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import type { Article } from "@workspace/api-client-react";
+import type { Article, ParsedArticleResponse } from "@workspace/api-client-react";
 import { UploadContentRequestContentType } from "@workspace/api-client-react";
+import { format } from "date-fns";
 
 function ArticleEditor({ article, onSaved, onCancel }: { article?: Article | null, onSaved: () => void, onCancel: () => void }) {
   const { toast } = useToast();
@@ -20,7 +21,7 @@ function ArticleEditor({ article, onSaved, onCancel }: { article?: Article | nul
     title: article?.title || "",
     summary: article?.summary || "",
     content: article?.content || "",
-    category: article?.category || "Politics",
+    category: article?.category || "Public Officials",
     tags: article?.tags?.join(", ") || "",
     imageUrl: article?.imageUrl || "",
     published: article ? article.published : true,
@@ -83,17 +84,16 @@ function ArticleEditor({ article, onSaved, onCancel }: { article?: Article | nul
         <div className="space-y-6 bg-gray-50 p-6 rounded-xl border border-gray-200">
           <div>
             <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Category</label>
-            <select 
-              value={formData.category} 
+            <select
+              value={formData.category}
               onChange={e => setFormData({...formData, category: e.target.value})}
               className="w-full h-10 px-3 py-2 rounded-md border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary"
             >
-              <option value="Politics">Politics</option>
-              <option value="Government">Government</option>
-              <option value="Constitution">Constitution</option>
-              <option value="Crime">Crime</option>
-              <option value="Economy">Economy</option>
-              <option value="World">World</option>
+              <option value="Corrupt Law Enforcement">Corrupt Law Enforcement</option>
+              <option value="Public Officials">Public Officials</option>
+              <option value="Court Cases - Open">Court Cases - Open</option>
+              <option value="Court Cases - Closed">Court Cases - Closed</option>
+              <option value="Activism">Activism</option>
             </select>
           </div>
           <div>
@@ -127,7 +127,7 @@ function ArticleEditor({ article, onSaved, onCancel }: { article?: Article | nul
 export default function AdminDashboard() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
-  
+
   const [activeTab, setActiveTab] = useState("list");
   const [editingArticle, setEditingArticle] = useState<Article | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -135,7 +135,9 @@ export default function AdminDashboard() {
   // Upload State
   const [rawContent, setRawContent] = useState("");
   const [contentType, setContentType] = useState<UploadContentRequestContentType>(UploadContentRequestContentType.text);
+  const [parsedDraft, setParsedDraft] = useState<ParsedArticleResponse | null>(null);
   const uploadMut = useUploadArticleContentMutation();
+  const createMut = useCreateArticleMutation();
 
   const { data, isLoading } = useArticles({ limit: 100 });
   const deleteMut = useDeleteArticleMutation();
@@ -169,28 +171,61 @@ export default function AdminDashboard() {
     if (!rawContent) return;
     uploadMut.mutate({ data: { rawContent, contentType } }, {
       onSuccess: (res) => {
-        toast({ title: "Parsing Complete", description: "Content converted to article format." });
-        setEditingArticle({
-          id: 0, // temp
-          title: res.suggestedTitle,
-          summary: res.suggestedSummary,
-          content: res.processedContent,
-          category: res.suggestedCategory,
-          tags: res.suggestedTags,
-          slug: "",
-          author: "Don Matthews",
-          readTimeMinutes: 5,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          published: false,
-          featured: false,
-          metaTitle: res.suggestedMetaTitle,
-          metaDescription: res.suggestedMetaDescription
-        });
-        setIsCreating(true);
-        setActiveTab("list"); // Hide upload UI while editing
+        toast({ title: "Draft Generated", description: "Review and publish your article." });
+        setParsedDraft(res);
       }
     });
+  };
+
+  const handlePublishNow = () => {
+    if (!parsedDraft) return;
+    createMut.mutate({
+      data: {
+        title: parsedDraft.suggestedTitle,
+        summary: parsedDraft.suggestedSummary,
+        content: parsedDraft.processedContent,
+        category: parsedDraft.suggestedCategory,
+        tags: parsedDraft.suggestedTags,
+        metaTitle: parsedDraft.suggestedMetaTitle,
+        metaDescription: parsedDraft.suggestedMetaDescription,
+        published: true,
+      }
+    }, {
+      onSuccess: () => {
+        toast({ title: "Published!", description: "Article is now live." });
+        setParsedDraft(null);
+        setRawContent("");
+      }
+    });
+  };
+
+  const handleOpenInEditor = () => {
+    if (!parsedDraft) return;
+    setEditingArticle({
+      id: -1, // sentinel for new article from parser
+      title: parsedDraft.suggestedTitle,
+      summary: parsedDraft.suggestedSummary,
+      content: parsedDraft.processedContent,
+      category: parsedDraft.suggestedCategory,
+      tags: parsedDraft.suggestedTags,
+      slug: "",
+      author: "Don Matthews",
+      readTimeMinutes: 5,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      published: false,
+      featured: false,
+      metaTitle: parsedDraft.suggestedMetaTitle,
+      metaDescription: parsedDraft.suggestedMetaDescription,
+      imageUrl: null,
+      views: 0,
+      shares: 0,
+      viralScore: 0,
+      publishedAt: null,
+      scheduledFor: null,
+    });
+    setIsCreating(true);
+    setParsedDraft(null);
   };
 
   const handleTogglePublish = (article: Article) => {
@@ -202,8 +237,8 @@ export default function AdminDashboard() {
   if (isCreating || editingArticle) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-10 bg-gray-50 min-h-screen">
-        <ArticleEditor 
-          article={editingArticle?.id === 0 ? null : editingArticle} // if id 0, it's from parser (new)
+        <ArticleEditor
+          article={editingArticle?.id === -1 ? null : editingArticle} // if id -1, it's from parser (new)
           onSaved={() => { setEditingArticle(null); setIsCreating(false); }}
           onCancel={() => { setEditingArticle(null); setIsCreating(false); }}
         />
@@ -287,47 +322,117 @@ export default function AdminDashboard() {
 
         <TabsContent value="upload">
           <div className="bg-white rounded-xl shadow-md border border-gray-200 p-8 max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <UploadCloud className="w-8 h-8" />
-              </div>
-              <h2 className="text-2xl font-display font-black text-navy mb-2">Automated Article Generation</h2>
-              <p className="text-muted-foreground text-sm">Paste raw HTML, raw text, or evidence notes. The system will parse it, fix formatting, assign tags, and generate a draft ready for your review.</p>
-            </div>
+            {!parsedDraft ? (
+              <>
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <UploadCloud className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-2xl font-display font-black text-navy mb-2">Automated Article Generation</h2>
+                  <p className="text-muted-foreground text-sm">Paste raw HTML, raw text, or evidence notes. The system will parse it, fix formatting, assign tags, and generate a draft ready for your review.</p>
+                </div>
 
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Source Material Type</label>
-                <select 
-                  value={contentType} 
-                  onChange={e => setContentType(e.target.value as UploadContentRequestContentType)}
-                  className="w-full h-12 px-4 rounded-md border border-gray-300 bg-gray-50 text-navy font-semibold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                >
-                  <option value={UploadContentRequestContentType.html}>Raw HTML Code</option>
-                  <option value={UploadContentRequestContentType.text}>Plain Text Article</option>
-                  <option value={UploadContentRequestContentType.evidence}>Evidence / Field Notes</option>
-                </select>
-              </div>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Source Material Type</label>
+                    <select
+                      value={contentType}
+                      onChange={e => setContentType(e.target.value as UploadContentRequestContentType)}
+                      className="w-full h-12 px-4 rounded-md border border-gray-300 bg-gray-50 text-navy font-semibold ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      <option value={UploadContentRequestContentType.html}>Raw HTML Code</option>
+                      <option value={UploadContentRequestContentType.text}>Plain Text Article</option>
+                      <option value={UploadContentRequestContentType.evidence}>Evidence / Field Notes</option>
+                    </select>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Raw Content</label>
-                <Textarea 
-                  value={rawContent} 
-                  onChange={e => setRawContent(e.target.value)} 
-                  rows={12} 
-                  className="font-mono text-sm bg-gray-900 text-green-400 p-4 rounded-lg focus-visible:ring-primary border-0" 
-                  placeholder="Paste your source material here..." 
-                />
-              </div>
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-widest text-navy mb-2">Raw Content</label>
+                    <Textarea
+                      value={rawContent}
+                      onChange={e => setRawContent(e.target.value)}
+                      rows={12}
+                      className="font-mono text-sm bg-gray-900 text-green-400 p-4 rounded-lg focus-visible:ring-primary border-0"
+                      placeholder="Paste your source material here..."
+                    />
+                  </div>
 
-              <Button 
-                onClick={handleParseUpload} 
-                disabled={!rawContent || uploadMut.isPending} 
-                className="w-full h-14 bg-primary hover:bg-red-700 text-white font-bold tracking-widest text-lg shadow-lg transition-transform active:scale-[0.98]"
-              >
-                {uploadMut.isPending ? "ANALYZING & PARSING..." : "GENERATE ARTICLE DRAFT"}
-              </Button>
-            </div>
+                  <Button
+                    onClick={handleParseUpload}
+                    disabled={!rawContent || uploadMut.isPending}
+                    className="w-full h-14 bg-primary hover:bg-red-700 text-white font-bold tracking-widest text-lg shadow-lg transition-transform active:scale-[0.98]"
+                  >
+                    {uploadMut.isPending ? "ANALYZING & PARSING..." : "GENERATE ARTICLE DRAFT"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-green-50 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8" />
+                  </div>
+                  <h2 className="text-2xl font-display font-black text-navy mb-2">Article Ready to Publish</h2>
+                  <p className="text-muted-foreground text-sm">Review the generated metadata below, then publish immediately or open the editor for fine-tuning.</p>
+                </div>
+
+                <div className="space-y-4 bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Title</label>
+                    <p className="text-lg font-bold text-navy">{parsedDraft.suggestedTitle}</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Summary</label>
+                    <p className="text-sm text-gray-700">{parsedDraft.suggestedSummary}</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Category</label>
+                      <Badge className="bg-blue-100 text-blue-800">{parsedDraft.suggestedCategory}</Badge>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Read Time</label>
+                      <p className="font-semibold text-navy">~{Math.max(1, Math.round(parsedDraft.processedContent.split(/\s+/).length / 200))} min</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-widest text-gray-600 mb-2">Tags</label>
+                    <div className="flex flex-wrap gap-2">
+                      {parsedDraft.suggestedTags.map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="bg-gray-100 text-gray-800">{tag}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => setParsedDraft(null)}
+                    className="flex-1 font-bold tracking-widest"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-2" /> BACK
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleOpenInEditor}
+                    className="flex-1 font-bold tracking-widest"
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" /> OPEN IN EDITOR
+                  </Button>
+                  <Button
+                    onClick={handlePublishNow}
+                    disabled={createMut.isPending}
+                    className="flex-1 bg-primary hover:bg-red-700 font-bold tracking-widest"
+                  >
+                    {createMut.isPending ? "PUBLISHING..." : "PUBLISH NOW →"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
